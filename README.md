@@ -10,5 +10,8 @@ go get -u github.com/getbuguai/scip
 ## 使用
 
 ```
-scip -ip=192.168.10.10
+scip 192.168.10.10
+scip -proxy 192.168.10.10
+scip
+scip getbuguai.github.io
 ```
