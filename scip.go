@@ -75,7 +75,7 @@ func Scanner(ctx context.Context, sc *scanner) {
 				return
 			}
 			defer conn.Close()
-			fmt.Println(address, "打开")
+			fmt.Println(xtools.IF(conn.RemoteAddr().String() == address, "", "["+conn.RemoteAddr().String()+"]").(string), address, "打开")
 		}(fmt.Sprintf("%s:%d", sc.IP, j))
 	}
 	//等待wg
