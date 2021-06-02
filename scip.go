@@ -5,27 +5,36 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"os"
 	"sync"
 	"time"
 
+	"github.com/getbuguai/gox/xtools"
 	"golang.org/x/net/proxy"
 )
 
-var ipAddress *string
 var useProxy *bool
+var ipAddress string
 
 func init() {
-	ipAddress = flag.String("ip", "127.0.0.1", "Ip Address ...")
 	useProxy = flag.Bool("proxy", false, "use proxy ...")
 }
 
 func main() {
 	fmt.Println("Hello BuGuai !!! ")
 	flag.Parse()
-	fmt.Println("Ip Address : ", *ipAddress)
+	args := os.Args
+
+	if *useProxy {
+		ipAddress = xtools.IF(len(args) == 2, "127.0.0.1", args[len(args)-1]).(string)
+	} else {
+		ipAddress = xtools.IF(len(args) == 1, "127.0.0.1", args[len(args)-1]).(string)
+	}
+
+	fmt.Println("Ip Address : ", ipAddress)
 	ctx := context.TODO()
 	Scanner(ctx, &scanner{
-		IP:       *ipAddress,
+		IP:       ipAddress,
 		UseProxy: *useProxy,
 	})
 }
