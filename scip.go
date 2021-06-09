@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"net"
-	"os"
 	"sync"
 	"time"
 
@@ -13,29 +12,33 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-var useProxy *bool
-var ipAddress string
+const (
+	defaultAddress = "127.0.0.1"
+)
+
+var (
+	useProxy  *bool
+	port      *uint64
+	ipAddress string
+)
 
 func init() {
 	useProxy = flag.Bool("proxy", false, "use proxy ...")
+	port = flag.Uint64("port", 0, "port ...")
 }
 
 func main() {
 	fmt.Println("Hello BuGuai !!! ")
 	flag.Parse()
-	args := os.Args
 
-	if *useProxy {
-		ipAddress = xtools.IF(len(args) == 2, "127.0.0.1", args[len(args)-1]).(string)
-	} else {
-		ipAddress = xtools.IF(len(args) == 1, "127.0.0.1", args[len(args)-1]).(string)
-	}
+	ipAddress = xtools.IF(flag.Arg(0) == "", "127.0.0.1", flag.Arg(0)).(string)
 
 	fmt.Println("Ip Address : ", ipAddress)
 	ctx := context.TODO()
 	Scanner(ctx, &scanner{
 		IP:       ipAddress,
 		UseProxy: *useProxy,
+		Port:     *port,
 	})
 }
 
@@ -43,6 +46,7 @@ func main() {
 type scanner struct {
 	IP       string
 	UseProxy bool
+	Port     uint64
 }
 
 // Scanner doc
@@ -52,32 +56,42 @@ func Scanner(ctx context.Context, sc *scanner) {
 	//wg
 	var wg sync.WaitGroup
 
-	//循环
-	for j := 21; j <= 65535; j++ {
-		//添加wg
-		wg.Add(1)
-		go func(address string) {
-			//释放wg
-			defer wg.Done()
+	do := func(address string, showClose bool) {
+		//释放wg
+		defer wg.Done()
 
-			var conn net.Conn
-			var err error
+		var conn net.Conn
+		var err error
 
-			// 请求
-			if sc.UseProxy {
-				conn, err = proxy.Dial(ctx, "tcp4", address)
-			} else {
-				// conn, err = net.DialTimeout("tcp", address, time.Second*10)
-				conn, err = net.Dial("tcp4", address)
+		// 请求
+		if sc.UseProxy {
+			conn, err = proxy.Dial(ctx, "tcp4", address)
+		} else {
+			// conn, err = net.DialTimeout("tcp", address, time.Second*10)
+			conn, err = net.Dial("tcp4", address)
+		}
+		if err != nil {
+			if showClose {
+				fmt.Println(address, "关闭")
 			}
-			if err != nil {
-				// fmt.Println(address, "是关闭的", err)
-				return
-			}
-			defer conn.Close()
-			fmt.Println(xtools.IF(conn.RemoteAddr().String() == address, "", "["+conn.RemoteAddr().String()+"]").(string), address, "打开")
-		}(fmt.Sprintf("%s:%d", sc.IP, j))
+			return
+		}
+		defer conn.Close()
+		fmt.Println(xtools.IF(conn.RemoteAddr().String() == address, "", "["+conn.RemoteAddr().String()+"]").(string), address, "打开")
 	}
+
+	if sc.Port == 0 {
+		//循环
+		for j := 21; j <= 65535; j++ {
+			//添加wg
+			wg.Add(1)
+			go do(fmt.Sprintf("%s:%d", sc.IP, j), false)
+		}
+	} else {
+		wg.Add(1)
+		go do(fmt.Sprintf("%s:%d", sc.IP, sc.Port), true)
+	}
+
 	//等待wg
 	wg.Wait()
 	var elapseTime = time.Since(begin)
