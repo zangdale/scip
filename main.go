@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/getbuguai/gox/xtools"
 	"golang.org/x/net/proxy"
 )
 
@@ -28,10 +27,9 @@ func init() {
 }
 
 func main() {
-	fmt.Println("Hello BuGuai !!! ")
 	flag.Parse()
 
-	ipAddress = xtools.IF(flag.Arg(0) == "", "127.0.0.1", flag.Arg(0)).(string)
+	ipAddress = IF[string](flag.Arg(0) == "", "127.0.0.1", flag.Arg(0))
 
 	fmt.Println("Ip Address : ", ipAddress)
 	ctx := context.TODO()
@@ -77,7 +75,7 @@ func Scanner(ctx context.Context, sc *scanner) {
 			return
 		}
 		defer conn.Close()
-		fmt.Println(xtools.IF(conn.RemoteAddr().String() == address, "", "["+conn.RemoteAddr().String()+"]").(string), address, "打开")
+		fmt.Println(IF[string](conn.RemoteAddr().String() == address, "", "["+conn.RemoteAddr().String()+"]"), address, "打开")
 	}
 
 	if sc.Port == 0 {
